@@ -54,6 +54,26 @@ module "apigee_monitoring" {
 }
 ```
 
+## Remote State (Optional)
+
+Terraform stores its state file locally in the `.terraform/` directory by default. To keep state centralized and shareable, you can configure a **Google Cloud Storage (GCS) backend**.
+
+```hcl
+terraform {
+  backend "gcs" {
+    bucket  = "my-terraform-state-bucket"
+    prefix  = "apigee-monitoring"
+  }
+}
+```
+
+- Create a GCS bucket (e.g., `gsutil mb gs://my-terraform-state-bucket`).
+- Grant the service account used by Terraform `storage.objects.create` and `storage.objects.get` permissions.
+- Add the above `terraform { backend "gcs" { ... } }` block to the top of `main.tf` (or a separate `backend.tf`).
+- Run `terraform init -reconfigure` to migrate the existing local state to the bucket.
+
+Now the state lives in `gs://my-terraform-state-bucket/apigee-monitoring/terraform.tfstate` and is safe for collaborative workflows.
+
 ## Understanding the optional notification channel ID
 
 The commented line:
