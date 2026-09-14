@@ -34,12 +34,12 @@ resource "google_monitoring_alert_policy" "proxy_latency" {
   for_each = toset(var.proxies)
 
   display_name = "Apigee Proxy ${each.key} Latency"
-  combiner    = "OR"
+  combiner     = "OR"
 
   conditions {
-    display_name = "Latency > 500ms"
+    display_name = "95th Percentile Latency > 500ms"
     condition_threshold {
-      filter          = "metric.type=\"apigee.googleapis.com/proxy/latencies\" AND resource.type=\"apigee.googleapis.com/Proxy\" AND metric.labels.proxy_name=\"${each.key}\""
+      filter          = "metric.type=\"apigee.googleapis.com/proxyv2/latencies_percentile\" AND resource.type=\"apigee.googleapis.com/ProxyV2\" AND metric.label.\"percentile\"=\"95\" AND resource.label.\"proxy_name\"=\"${each.key}\""
       comparison      = "COMPARISON_GT"
       threshold_value = 500
       duration        = "60s"
@@ -56,21 +56,19 @@ resource "google_monitoring_alert_policy" "proxy_latency" {
 resource "google_monitoring_alert_policy" "proxy_error_rate" {
   for_each = toset(var.proxies)
 
-  display_name = "Apigee Proxy ${each.key} Error Rate"
-  combiner    = "OR"
+  display_name = "Apigee Proxy ${each.key} 5xx Errors"
+  combiner     = "OR"
 
   conditions {
-    display_name = "Error rate > 5%"
+    display_name = "5xx Error count > 5"
     condition_threshold {
-      filter          = "metric.type=\"apigee.googleapis.com/proxy/response_count\" AND resource.type=\"apigee.googleapis.com/Proxy\" AND metric.labels.response_code_class=\"4xx\" AND metric.labels.proxy_name=\"${each.key}\""
+      filter          = "metric.type=\"apigee.googleapis.com/proxyv2/response_count\" AND resource.type=\"apigee.googleapis.com/ProxyV2\" AND metric.label.\"response_code\"=monitoring.regex.full_match(\"5.*\") AND resource.label.\"proxy_name\"=\"${each.key}\""
       comparison      = "COMPARISON_GT"
-      # Approximate error count threshold; for a real ratio use a metric that provides a percentage.
       threshold_value = 5
       duration        = "60s"
       aggregations {
         alignment_period   = "60s"
         per_series_aligner = "ALIGN_DELTA"
-        group_by_fields    = ["metric.labels.response_code_class"]
       }
     }
   }
